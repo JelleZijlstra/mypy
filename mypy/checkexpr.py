@@ -3060,6 +3060,43 @@ class ExpressionChecker(ExpressionVisitor[Type]):
         self.chk.handle_cannot_determine_type(name, context)
 
     def visit_yield_expr(self, e: YieldExpr) -> Type:
+        if self.chk.funcs_stack and self.chk.funcs_stack[-1].is_asynq:
+            if e.expr is None:
+                self.chk.fail(messages.YIELD_VALUE_EXPECTED, e)
+                return AnyType(TypeOfAny.from_error)
+            actual_type = self.accept(e.expr)
+            if isinstance(actual_type, TupleType):
+                items = []  # type: List[Type]
+                for item in actual_type.items:
+                    if isinstance(item, Instance) and is_named_instance(item, 'asynq.AsyncTask'):
+                        items.append(item.args[0])
+                    elif isinstance(item, NoneTyp):
+                        items.append(item)
+                    else:
+                        break
+                else:
+                    return actual_type.copy_modified(items=items)
+            elif isinstance(actual_type, Instance):
+                if is_named_instance(actual_type, 'asynq.AsyncTask'):
+                    return actual_type.args[0]
+                elif is_named_instance(actual_type, 'builtins.tuple'):
+                    arg = actual_type.args[0]
+                    if isinstance(arg, Instance) and is_named_instance(arg, 'asynq.AsyncTask'):
+                        return self.chk.named_generic_type('builtins.tuple', [arg.args[0]])
+                elif is_named_instance(actual_type, 'builtins.list'):
+                    arg = actual_type.args[0]
+                    if isinstance(arg, Instance) and is_named_instance(arg, 'asynq.AsyncTask'):
+                        return self.chk.named_generic_type('builtins.list', [arg.args[0]])
+                elif is_named_instance(actual_type, 'builtins.dict'):
+                    arg = actual_type.args[1]
+                    if isinstance(arg, Instance) and is_named_instance(arg, 'asynq.AsyncTask'):
+                        return self.chk.named_generic_type('builtins.dict',
+                                                           [actual_type.args[0], arg.args[0]])
+            elif isinstance(actual_type, AnyType):
+                return AnyType(TypeOfAny.from_another_any, source_any=actual_type)
+            else:
+                self.chk.fail('Unexpected value yielded in async function', e)
+                return AnyType(TypeOfAny.from_error)
         return_type = self.chk.return_types[-1]
         expected_item_type = self.chk.get_generator_yield_type(return_type, False)
         if e.expr is None:

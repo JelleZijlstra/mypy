@@ -1,0 +1,86 @@
+-- Tests for the asynq library
+-- ---------------------------
+
+[case testAsynqBasic]
+from asynq import asynq
+
+@asynq()
+def f() -> int:
+    return 3
+
+@asynq()
+def g() -> int:
+    reveal_type(f.asynq())  # E: Revealed type is 'asynq.AsyncTask[builtins.int]'
+    x = yield f.asynq()
+    reveal_type(x)  # E: Revealed type is 'builtins.int'
+    y = f()
+    reveal_type(y)  # E: Revealed type is 'builtins.int'
+    return x
+
+[builtins fixtures/asynq.pyi]
+
+[case testAsynqComplexYield]
+from asynq import asynq
+
+@asynq()
+def f() -> int:
+    return 3
+
+@asynq()
+def g() -> int:
+    x, y = yield f.asynq(), f.asynq()
+    reveal_type(x)  # E: Revealed type is 'builtins.int'
+    reveal_type(y)  # E: Revealed type is 'builtins.int'
+    xs = yield [f.asynq() for _ in range(10)]
+    reveal_type(xs)  # E: Revealed type is 'builtins.list[builtins.int]'
+    ys = yield {i: f.asynq() for i in range(10)}
+    reveal_type(ys)  # E: Revealed type is 'builtins.dict[builtins.int*, builtins.int]'
+    return x
+
+[builtins fixtures/asynq.pyi]
+
+[case testAsynqErrors]
+from asynq import asynq
+
+@asynq()
+def f() -> int:
+    return 4
+
+reveal_type(f)  # E: Revealed type is 'asynq.AsyncDecorator[builtins.int*]'
+
+f(1)  # E: Too many arguments for "__call__" of "AsyncDecorator"
+
+@asynq()
+def g(x: str) -> int:
+    return 3
+
+g()  # E: Too few arguments for "__call__" of "AsyncDecorator"
+g(1)  # E: Argument 1 to "__call__" of "AsyncDecorator" has incompatible type "int"; expected "str"
+g(y=1)  # E: Unexpected keyword argument "y" for "__call__" of "AsyncDecorator"
+reveal_type(g(""))  # E: Revealed type is 'builtins.int'
+
+@asynq()
+def caller() -> None:
+    yield g.asynq()  # E: Too few arguments for "asynq" of "AsyncDecorator"
+    yield g.asynq(1) # E: Argument 1 to "asynq" of "AsyncDecorator" has incompatible type "int"; expected "str"
+    reveal_type((yield g.asynq("")))  # E: Revealed type is 'builtins.int'
+
+[builtins fixtures/asynq.pyi]
+
+[case testAsynqMethod-skip]
+from asynq import asynq
+
+class HM:
+    @asynq()
+    def f(self, x: str) -> int:
+        return 4
+
+@asynq()
+def g() -> None:
+    reveal_type(HM.f)
+    hm = HM()
+    reveal_type(hm.f)
+    reveal_type(hm.f(''))
+    reveal_type((yield hm.f.asynq('')))
+
+[builtins fixtures/asynq.pyi]

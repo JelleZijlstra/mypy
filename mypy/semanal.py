@@ -2310,6 +2310,8 @@ class SemanticAnalyzerPass2(NodeVisitor[None],
             elif refers_to_fullname(d, 'typing.no_type_check'):
                 dec.var.type = AnyType(TypeOfAny.special_form)
                 no_type_check = True
+            elif isinstance(d, CallExpr) and refers_to_fullname(d.callee, 'asynq.asynq'):
+                dec.func.is_asynq = True
         for i in reversed(removed):
             del dec.decorators[i]
         if not dec.is_overload or dec.var.is_property:

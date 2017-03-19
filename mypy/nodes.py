@@ -526,6 +526,7 @@ class FuncItem(FuncBase):
                  'is_coroutine',  # Defined using 'async def' syntax?
                  'is_async_generator',  # Is an async def generator?
                  'is_awaitable_coroutine',  # Decorated with '@{typing,asyncio}.coroutine'?
+                 'is_asynq',  # Decorated with @asynq.async()
                  'expanded',  # Variants of function with type variables with values expanded
                  )
 
@@ -546,6 +547,7 @@ class FuncItem(FuncBase):
         self.is_coroutine = False
         self.is_async_generator = False
         self.is_awaitable_coroutine = False
+        self.is_asynq = False
         self.expanded = []  # type: List[FuncItem]
 
         self.min_args = 0

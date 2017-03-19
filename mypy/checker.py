@@ -19,7 +19,7 @@ from mypy.nodes import (
     UnicodeExpr, OpExpr, UnaryExpr, LambdaExpr, TempNode, SymbolTableNode,
     Context, Decorator, PrintStmt, BreakStmt, PassStmt, ContinueStmt,
     ComparisonExpr, StarExpr, EllipsisExpr, RefExpr, PromoteExpr,
-    Import, ImportFrom, ImportAll, ImportBase, TypeAlias,
+    Import, ImportFrom, ImportAll, ImportBase, TypeAlias, Argument,
     ARG_POS, ARG_STAR, LITERAL_TYPE, MDEF, GDEF,
     CONTRAVARIANT, COVARIANT, INVARIANT,
 )
@@ -142,6 +142,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
     return_types = None  # type: List[Type]
     # Flags; true for dynamically typed functions
     dynamic_funcs = None  # type: List[bool]
+    funcs_stack = None  # type: List[FuncItem]
     # Stack of collections of variables with partial types
     partial_types = None  # type: List[PartialTypeScope]
     # Vars for which partial type errors are already reported
@@ -198,6 +199,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         self.globals = tree.names
         self.return_types = []
         self.dynamic_funcs = []
+        self.funcs_stack = []
         self.partial_types = []
         self.partial_reported = set()
         self.deferred_nodes = []
@@ -722,6 +724,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
         If type_override is provided, use it as the function type.
         """
         self.dynamic_funcs.append(defn.is_dynamic() and not type_override)
+        self.funcs_stack.append(defn)
 
         with self.enter_partial_types(is_function=True):
             typ = self.function_type(defn)
@@ -734,6 +737,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                 raise RuntimeError('Not supported')
 
         self.dynamic_funcs.pop()
+        self.funcs_stack.pop()
         self.current_node_deferred = False
 
     @contextmanager
@@ -792,7 +796,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                              typ.ret_type)
 
                 # Check that Generator functions have the appropriate return type.
-                if defn.is_generator:
+                if defn.is_generator and not defn.is_asynq:
                     if defn.is_async_generator:
                         if not self.is_async_generator_return_type(typ.ret_type):
                             self.fail(messages.INVALID_RETURN_TYPE_FOR_ASYNC_GENERATOR, typ)
@@ -2816,12 +2820,48 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                                                    callable_name=fullname)
         self.check_untyped_after_decorator(sig, e.func)
         sig = set_callable_name(sig, e.func)
+        if isinstance(sig, Instance) and sig.type.fullname() == 'asynq.AsyncDecorator':
+            sig = self.refine_asynq_sig(sig, e.func)
         e.var.type = sig
         e.var.is_ready = True
         if e.func.is_property:
             self.check_incompatible_property_override(e)
         if e.func.info and not e.func.is_dynamic():
             self.check_method_override(e)
+
+    def refine_asynq_sig(self, sig: Instance, func: FuncDef) -> Instance:
+        if not isinstance(func.type, CallableType):
+            return sig
+        fallback = self.named_type('builtins.function')
+        asynq_task = self.lookup_typeinfo('asynq.AsyncTask')
+
+        table = SymbolTable()
+        typ = TypeInfo(table, sig.type.defn, sig.type.module_name)
+        typ.mro = [typ] + sig.type.mro
+
+        first = Argument(Var('self'), AnyType(TypeOfAny.special_form), None, ARG_POS)
+        args = [first] + func.arguments
+
+        first_type = [AnyType(TypeOfAny.special_form)]  # type: List[Type]
+        types = first_type + func.type.arg_types
+        first_item = ['self']  # type: List[Optional[str]]
+        items = first_item + func.type.arg_names
+        arg_kinds = [ARG_POS] + func.type.arg_kinds
+
+        call_sig = CallableType(types, arg_kinds, items, func.type.ret_type, fallback)
+        call_func = FuncDef('__call__', args, Block([]))
+        call_func.info = typ
+        call_func.type = set_callable_name(call_sig, call_func)
+        table['__call__'] = SymbolTableNode(MDEF, call_func)
+
+        asynq_ret = Instance(asynq_task, [func.type.ret_type])
+        asynq_sig = CallableType(types, arg_kinds, items, asynq_ret, fallback)
+        asynq_func = FuncDef('asynq', args, Block([]))
+        asynq_func.info = typ
+        asynq_func.type = set_callable_name(asynq_sig, asynq_func)
+        table['asynq'] = SymbolTableNode(MDEF, asynq_func)
+
+        return Instance(typ, sig.args, sig.line, sig.column, sig.erased)
 
     def check_for_untyped_decorator(self,
                                     func: FuncDef,
