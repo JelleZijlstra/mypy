@@ -13,6 +13,8 @@ def g() -> int:
     reveal_type(f.async())  # E: Revealed type is 'asynq.AsyncTask[builtins.int*]'
     x = yield f.async()
     reveal_type(x)  # E: Revealed type is 'builtins.int*'
+    y = f()
+    reveal_type(y)  # E: Revealed type is 'builtins.int*'
     return x
 
 [builtins fixtures/asynq.pyi]
@@ -34,5 +36,26 @@ def g() -> int:
     ys = yield {i: f.async() for i in range(10)}
     reveal_type(ys)  # E: Revealed type is 'builtins.dict[builtins.int*, builtins.int*]'
     return x
+
+[builtins fixtures/asynq.pyi]
+
+[case testAsynqErrors]
+from asynq import async
+
+@async()
+def f() -> int:
+    return 4
+
+# This doesn't currently error but it should. To fix this, should have
+# some way of preserving arguments across decorators.
+f(1)  # E: wrong arguments
+
+@async()
+def g(x: str) -> int:
+    return 3
+
+g()  # E: wrong arguments
+g(1)  # E: wrong arguments
+g(y=1)  # E: wrong arguments
 
 [builtins fixtures/asynq.pyi]

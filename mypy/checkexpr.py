@@ -2955,12 +2955,10 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                 self.chk.fail(messages.YIELD_VALUE_EXPECTED, e)
                 return AnyType()
             actual_type = self.accept(e.expr)
-            if is_named_instance(actual_type, 'asynq.AsyncTask'):
-                return actual_type.args[0]
-            elif isinstance(actual_type, TupleType):
+            if isinstance(actual_type, TupleType):
                 items = []  # type: List[Type]
                 for item in actual_type.items:
-                    if is_named_instance(item, 'asynq.AsyncTask'):
+                    if isinstance(item, Instance) and is_named_instance(item, 'asynq.AsyncTask'):
                         items.append(item.args[0])
                     elif isinstance(item, NoneTyp):
                         items.append(item)
@@ -2968,18 +2966,22 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                         break
                 else:
                     return actual_type.copy_modified(items=items)
-            elif is_named_instance(actual_type, 'builtins.tuple'):
-                arg = actual_type.args[0]
-                if is_named_instance(arg, 'asynq.AsyncTask'):
-                    return self.chk.named_generic_type('builtins.tuple', [arg.args[0]])
-            elif is_named_instance(actual_type, 'builtins.list'):
-                arg = actual_type.args[0]
-                if is_named_instance(arg, 'asynq.AsyncTask'):
-                    return self.chk.named_generic_type('builtins.list', [arg.args[0]])
-            elif is_named_instance(actual_type, 'builtins.dict'):
-                arg = actual_type.args[1]
-                if is_named_instance(arg, 'asynq.AsyncTask'):
-                    return self.chk.named_generic_type('builtins.dict', [actual_type.args[0], arg.args[0]])
+            elif isinstance(actual_type, Instance):
+                if is_named_instance(actual_type, 'asynq.AsyncTask'):
+                    return actual_type.args[0]
+                elif is_named_instance(actual_type, 'builtins.tuple'):
+                    arg = actual_type.args[0]
+                    if isinstance(arg, Instance) and is_named_instance(arg, 'asynq.AsyncTask'):
+                        return self.chk.named_generic_type('builtins.tuple', [arg.args[0]])
+                elif is_named_instance(actual_type, 'builtins.list'):
+                    arg = actual_type.args[0]
+                    if isinstance(arg, Instance) and is_named_instance(arg, 'asynq.AsyncTask'):
+                        return self.chk.named_generic_type('builtins.list', [arg.args[0]])
+                elif is_named_instance(actual_type, 'builtins.dict'):
+                    arg = actual_type.args[1]
+                    if isinstance(arg, Instance) and is_named_instance(arg, 'asynq.AsyncTask'):
+                        return self.chk.named_generic_type('builtins.dict',
+                                                           [actual_type.args[0], arg.args[0]])
             self.chk.fail('Unexpected value yielded in async function', e)
             return AnyType()
         return_type = self.chk.return_types[-1]

@@ -139,7 +139,7 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
     return_types = None  # type: List[Type]
     # Flags; true for dynamically typed functions
     dynamic_funcs = None  # type: List[bool]
-    funcs_stack = None  # type: List[FuncDef]
+    funcs_stack = None  # type: List[FuncItem]
     # Stack of collections of variables with partial types
     partial_types = None  # type: List[PartialTypeScope]
     # Vars for which partial type errors are already reported
