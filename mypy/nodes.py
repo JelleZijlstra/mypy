@@ -497,7 +497,6 @@ FUNCITEM_FLAGS = FUNCBASE_FLAGS + [
     'is_awaitable_coroutine',
 ]
 
-
 class FuncItem(FuncBase):
     """Base class for nodes usable as overloaded function items."""
 
@@ -514,6 +513,7 @@ class FuncItem(FuncBase):
                  'is_coroutine',  # Defined using 'async def' syntax?
                  'is_async_generator',  # Is an async def generator?
                  'is_awaitable_coroutine',  # Decorated with '@{typing,asyncio}.coroutine'?
+                 'is_asynq',  #  Decorated with @asynq.async()
                  'expanded',  # Variants of function with type variables with values expanded
                  )
 

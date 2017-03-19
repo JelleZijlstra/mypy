@@ -10,7 +10,9 @@ def f() -> int:
 
 @async()
 def g() -> int:
+    reveal_type(f.async())  # E: Revealed type is 'asynq.AsyncTask[builtins.int*]'
     x = yield f.async()
+    reveal_type(x)  # E: Revealed type is 'builtins.int*'
     return x
 
 [builtins fixtures/asynq.pyi]
@@ -25,8 +27,12 @@ def f() -> int:
 @async()
 def g() -> int:
     x, y = yield f.async(), f.async()
+    reveal_type(x)  # E: Revealed type is 'builtins.int*'
+    reveal_type(y)  # E: Revealed type is 'builtins.int*'
     xs = yield [f.async() for _ in range(10)]
+    reveal_type(xs)  # E: Revealed type is 'builtins.list[builtins.int*]'
     ys = yield {i: f.async() for i in range(10)}
-    return x + y + sum(xs) + sum(ys.values())
+    reveal_type(ys)  # E: Revealed type is 'builtins.dict[builtins.int*, builtins.int*]'
+    return x
 
 [builtins fixtures/asynq.pyi]
