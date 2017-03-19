@@ -1,0 +1,32 @@
+-- Tests for the asynq library
+-- ---------------------------
+
+[case testAsynqBasic]
+from asynq import async
+
+@async()
+def f() -> int:
+    return 3
+
+@async()
+def g() -> int:
+    x = yield f.async()
+    return x
+
+[builtins fixtures/asynq.pyi]
+
+[case testAsynqComplexYield]
+from asynq import async
+
+@async()
+def f() -> int:
+    return 3
+
+@async()
+def g() -> int:
+    x, y = yield f.async(), f.async()
+    xs = yield [f.async() for _ in range(10)]
+    ys = yield {i: f.async() for i in range(10)}
+    return x + y + sum(xs) + sum(ys.values())
+
+[builtins fixtures/asynq.pyi]
