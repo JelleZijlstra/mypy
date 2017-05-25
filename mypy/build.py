@@ -13,9 +13,11 @@ The function build() is the main interface to this module.
 import binascii
 import collections
 import contextlib
+import functools
 import hashlib
 import json
 import os.path
+import subprocess
 import sys
 import time
 from os.path import dirname, basename
@@ -256,12 +258,35 @@ def mypy_path() -> List[str]:
     return path_env.split(os.pathsep)
 
 
+@functools.lru_cache()
+def find_user_stub_dir(pyversion: Tuple[int, int]) -> Optional[str]:
+    """Finds the user stub directory, where users can install their own stubs."""
+    try:
+        exec_prefix_bytes = subprocess.check_output([
+            'python{}.{}'.format(*pyversion),
+            '-c',
+            'import sys; print(sys.exec_prefix)',
+        ])
+    except subprocess.CalledProcessError:
+        return None
+    exec_prefix = os.fsdecode(exec_prefix_bytes.strip())
+    user_dir = os.path.join(exec_prefix, 'shared', 'type-hinting', 'python{}.{}'.format(*pyversion))
+    if os.path.exists(user_dir):
+        return user_dir
+    else:
+        return None
+
+
 def default_lib_path(data_dir: str,
                      pyversion: Tuple[int, int],
                      custom_typeshed_dir: Optional[str]) -> List[str]:
     """Return default standard library search paths."""
     # IDEA: Make this more portable.
     path = []  # type: List[str]
+
+    user_stub_dir = find_user_stub_dir(pyversion)
+    if user_stub_dir is not None:
+        path.append(user_stub_dir)
 
     if custom_typeshed_dir:
         typeshed_dir = custom_typeshed_dir
