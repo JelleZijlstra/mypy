@@ -1935,7 +1935,7 @@ class State:
         # definitions in the file to the symbol table.  We must do
         # this before processing imports, since this may mark some
         # import statements as unreachable.
-        first = SemanticAnalyzerPass1(manager.semantic_analyzer)
+        first = SemanticAnalyzerPass1(manager.semantic_analyzer, modules)
         with self.wrap_context():
             first.visit_file(self.tree, self.xpath, self.id, self.options)
 

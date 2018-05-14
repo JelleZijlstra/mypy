@@ -275,8 +275,7 @@ HELLO = 'hello there'
 [file c.py]
 from a import HELLO
 def greet() -> None:
-    print(HELLO)
-    bad
+    pass
 
 [builtins fixtures/list.pyi]
 

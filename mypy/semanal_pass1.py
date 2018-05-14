@@ -16,8 +16,7 @@ bind names, which only happens in pass 2.
 This pass also infers the reachability of certain if staments, such as
 those with platform checks.
 """
-
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 
 from mypy import experiments
 from mypy.nodes import (
@@ -38,11 +37,22 @@ from mypy.util import correct_relative_import
 class SemanticAnalyzerPass1(NodeVisitor[None]):
     """First phase of semantic analysis.
 
-    See docstring of 'analyze()' below for a description of what this does.
+    See the module docstring for a description of what this does.
     """
 
-    def __init__(self, sem: SemanticAnalyzerPass2) -> None:
+    def __init__(self, sem: SemanticAnalyzerPass2, modules: Dict[str, MypyFile]) -> None:
         self.sem = sem
+        self.modules = modules
+        self.is_stub_file = False
+
+    def add_import_all_callback(self, imported: str, globals: SymbolTable,
+                                mod_node: MypyFile, node: ImportAll) -> None:
+        self.sem.import_all_callbacks[imported].append((globals, mod_node, node))
+
+    def process_import_all_callback(self, imported: str, source_globals: SymbolTable) -> None:
+        callbacks = self.sem.import_all_callbacks.pop(imported, [])
+        for target_globals, mod_node, import_node in callbacks:
+            self.import_globals_into(source_globals, target_globals, mod_node, import_node)
 
     def visit_file(self, file: MypyFile, fnam: str, mod_id: str, options: Options) -> None:
         """Perform the first analysis pass.
@@ -63,6 +73,7 @@ class SemanticAnalyzerPass1(NodeVisitor[None]):
         self.sem.options = options  # Needed because we sometimes call into it
         self.pyversion = options.python_version
         self.platform = options.platform
+        self.is_stub_file = fnam.endswith('.pyi')
         sem.cur_mod_id = mod_id
         sem.cur_mod_node = file
         sem.errors.set_file(fnam, mod_id, scope=sem.scope)
@@ -130,6 +141,7 @@ class SemanticAnalyzerPass1(NodeVisitor[None]):
             del self.sem.options
 
         sem.scope.leave()
+        self.process_import_all_callback(mod_id, sem.globals)
 
     def visit_block(self, b: Block) -> None:
         if b.is_unreachable:
@@ -238,6 +250,21 @@ class SemanticAnalyzerPass1(NodeVisitor[None]):
                 node.accept(self)
         self.sem.leave_class()
 
+    def import_globals_into(self, source_module: SymbolTable, target_module: SymbolTable,
+                            mod_node: MypyFile, import_node: ImportAll) -> None:
+        print('import globals from', source_module, 'into', target_module)
+        for name, orig_node in source_module.items():
+            if (not orig_node.module_public or
+                    (name.startswith('_') and '__all__' not in source_module)):
+                continue
+            if name not in target_module:
+                sym = create_indirect_imported_name(mod_node,
+                                                    import_node.id,
+                                                    import_node.relative,
+                                                    name)
+                if sym:
+                    target_module[name] = sym
+
     def visit_import_from(self, node: ImportFrom) -> None:
         # We can't bind module names during the first pass, as the target module might be
         # unprocessed. However, we add dummy unbound imported names to the symbol table so
@@ -254,6 +281,7 @@ class SemanticAnalyzerPass1(NodeVisitor[None]):
                                                     node.relative,
                                                     name)
                 if sym:
+                    sym.module_public = not self.is_stub_file or as_name is not None
                     self.add_symbol(imported_name, sym, context=node)
 
     def visit_import(self, node: Import) -> None:
@@ -266,10 +294,20 @@ class SemanticAnalyzerPass1(NodeVisitor[None]):
             # For 'import a.b.c' we create symbol 'a'.
             imported_id = imported_id.split('.')[0]
             if imported_id not in self.sem.globals:
-                self.add_symbol(imported_id, SymbolTableNode(UNBOUND_IMPORTED, None), node)
+                module_public = not self.is_stub_file or as_id is not None
+                sym = SymbolTableNode(UNBOUND_IMPORTED, None, module_public=module_public)
+                self.add_symbol(imported_id, sym, node)
 
     def visit_import_all(self, node: ImportAll) -> None:
         node.is_top_level = self.sem.is_module_scope()
+        if not self.sem.is_module_scope():
+            return
+        # TODO relative import
+        if node.id in self.modules:
+            self.import_globals_into(self.modules[node.id].names, self.sem.globals,
+                                     self.sem.cur_mod_node, node)
+        else:
+            self.add_import_all_callback(node.id, self.sem.globals, self.sem.cur_mod_node, node)
 
     def visit_while_stmt(self, s: WhileStmt) -> None:
         if self.sem.is_module_scope():

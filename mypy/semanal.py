@@ -32,6 +32,7 @@ TODO: Check if the third pass slows down type checking significantly.
   traverse the entire AST.
 """
 
+from collections import defaultdict
 from contextlib import contextmanager
 
 from typing import (
@@ -216,6 +217,9 @@ class SemanticAnalyzerPass2(NodeVisitor[None],
     # Postponed functions collected if
     # postpone_nested_functions_stack[-1] == FUNCTION_FIRST_PHASE_POSTPONE_SECOND.
     postponed_functions_stack = None  # type: List[List[Node]]
+    # Callbacks to add names from modules with import * that have not yet been
+    # processed (used in pass 1, but defined here because the object is longer-lived).
+    import_all_callbacks = None  # type: Dict[str, List[SymbolTable]]
 
     loop_depth = 0         # Depth of breakable loops
     cur_mod_id = ''        # Current module id (or None) (phase 2)
@@ -256,6 +260,7 @@ class SemanticAnalyzerPass2(NodeVisitor[None],
         # for processing module top levels in fine-grained incremental mode.
         self.recurse_into_functions = True
         self.scope = Scope()
+        self.import_all_callbacks = defaultdict(list)
 
     def visit_file(self, file_node: MypyFile, fnam: str, options: Options,
                    patches: List[Tuple[int, Callable[[], None]]]) -> None:
