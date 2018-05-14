@@ -262,6 +262,24 @@ main:1: error: Cannot find module named 'nonexistent'
 main:1: note: (Perhaps setting MYPYPATH or using the "--ignore-missing-imports" flag would help)
 main:2: error: Unsupported left operand type for + ("None")
 
+[case testRepeatedImportStar]
+import a
+
+[file a.py]
+from b import *
+from c import greet
+
+[file b.py]
+HELLO = 'hello there'
+
+[file c.py]
+from a import HELLO
+def greet() -> None:
+    print(HELLO)
+    bad
+
+[builtins fixtures/list.pyi]
+
 [case testAccessingUnknownModule]
 import xyz
 xyz.foo()
