@@ -2091,6 +2091,14 @@ reveal_type(A().g) # E: Revealed type is 'def (x: builtins.list[builtins.int])'
 from typing import List
 [builtins fixtures/list.pyi]
 
+[case testStarImportWithinCycle]
+import a
+[file a.py]
+from b import f
+[file b.py]
+from a import *
+def f() -> None: pass
+
 [case testIndirectStarImportWithinCycle1]
 import a
 [file a.py]
