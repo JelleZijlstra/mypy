@@ -279,7 +279,11 @@ class DefaultPlugin(Plugin):
 
     def get_function_hook(self, fullname: str
                           ) -> Optional[Callable[[FunctionContext], Type]]:
-        if fullname == 'contextlib.contextmanager':
+        if fullname in ('asynq.async', 'asynq.asynq'):
+            return None
+            # from mypy.plugins import asynq
+            # return asynq.asynq_callback
+        elif fullname == 'contextlib.contextmanager':
             return contextmanager_callback
         elif fullname == 'builtins.open' and self.python_version[0] == 3:
             return open_callback
