@@ -2982,8 +2982,11 @@ class ExpressionChecker(ExpressionVisitor[Type]):
                     if isinstance(arg, Instance) and is_named_instance(arg, 'asynq.AsyncTask'):
                         return self.chk.named_generic_type('builtins.dict',
                                                            [actual_type.args[0], arg.args[0]])
-            self.chk.fail('Unexpected value yielded in async function', e)
-            return AnyType()
+            elif isinstance(actual_type, AnyType):
+                return AnyType(TypeOfAny.from_another_any, source_any=actual_type)
+            else:
+                self.chk.fail('Unexpected value yielded in async function', e)
+                return AnyType(TypeOfAny.from_error)
         return_type = self.chk.return_types[-1]
         expected_item_type = self.chk.get_generator_yield_type(return_type, False)
         if e.expr is None:
