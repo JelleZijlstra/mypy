@@ -1,0 +1,1 @@
+test-data/unit/lib-stub/asynq.pyi
