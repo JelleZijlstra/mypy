@@ -34,7 +34,7 @@ from mypy import defaults
 from mypy.options import PER_MODULE_OPTIONS, Options
 
 _CONFIG_VALUE_TYPES: _TypeAlias = Union[
-    str, bool, int, float, Dict[str, str], List[str], Tuple[int, int],
+    str, bool, int, float, Dict[str, str], List[str], Tuple[int, int]
 ]
 _INI_PARSER_CALLABLE: _TypeAlias = Callable[[Any], _CONFIG_VALUE_TYPES]
 
@@ -597,9 +597,11 @@ def parse_mypy_comments(
             errors.append(
                 (
                     lineno,
-                    'Setting "strict" not supported in inline configuration: specify it in '
-                    "a configuration file instead, or set individual inline flags "
-                    '(see "mypy -h" for the list of flags enabled in strict mode)',
+                    (
+                        'Setting "strict" not supported in inline configuration: specify it in '
+                        "a configuration file instead, or set individual inline flags "
+                        '(see "mypy -h" for the list of flags enabled in strict mode)'
+                    ),
                 )
             )
 
@@ -615,7 +617,7 @@ def get_config_module_names(filename: str | None, modules: list[str]) -> str:
     if not is_toml(filename):
         return ", ".join(f"[mypy-{module}]" for module in modules)
 
-    return "module = ['%s']" % ("', '".join(sorted(modules)))
+    return "module = ['%s']" % "', '".join(sorted(modules))
 
 
 class ConfigTOMLValueError(ValueError):

@@ -879,7 +879,7 @@ class StubGenerator(mypy.traverser.TraverserVisitor):
         ):
             if expr.name == "abstractproperty":
                 self.import_tracker.require_name(expr.expr.name)
-                self.add_decorator("%s" % ("property"))
+                self.add_decorator("%s" % "property")
                 self.add_decorator("{}.{}".format(expr.expr.name, "abstractmethod"))
             else:
                 self.import_tracker.require_name(expr.expr.name)
@@ -1740,21 +1740,27 @@ def parse_options(args: list[str]) -> Options:
     parser.add_argument(
         "--no-import",
         action="store_true",
-        help="don't import the modules, just parse and analyze them "
-        "(doesn't work with C extension modules and might not "
-        "respect __all__)",
+        help=(
+            "don't import the modules, just parse and analyze them "
+            "(doesn't work with C extension modules and might not "
+            "respect __all__)"
+        ),
     )
     parser.add_argument(
         "--parse-only",
         action="store_true",
-        help="don't perform semantic analysis of sources, just parse them "
-        "(only applies to Python modules, might affect quality of stubs)",
+        help=(
+            "don't perform semantic analysis of sources, just parse them "
+            "(only applies to Python modules, might affect quality of stubs)"
+        ),
     )
     parser.add_argument(
         "--include-private",
         action="store_true",
-        help="generate stubs for objects and members considered private "
-        "(single leading underscore and no trailing underscores)",
+        help=(
+            "generate stubs for objects and members considered private "
+            "(single leading underscore and no trailing underscores)"
+        ),
     )
     parser.add_argument(
         "--export-less",
@@ -1767,16 +1773,20 @@ def parse_options(args: list[str]) -> Options:
         "--doc-dir",
         metavar="PATH",
         default="",
-        help="use .rst documentation in PATH (this may result in "
-        "better stubs in some cases; consider setting this to "
-        "DIR/Python-X.Y.Z/Doc/library)",
+        help=(
+            "use .rst documentation in PATH (this may result in "
+            "better stubs in some cases; consider setting this to "
+            "DIR/Python-X.Y.Z/Doc/library)"
+        ),
     )
     parser.add_argument(
         "--search-path",
         metavar="PATH",
         default="",
-        help="specify module search directories, separated by ':' "
-        "(currently only used if --no-import is given)",
+        help=(
+            "specify module search directories, separated by ':' "
+            "(currently only used if --no-import is given)"
+        ),
     )
     parser.add_argument(
         "-o",

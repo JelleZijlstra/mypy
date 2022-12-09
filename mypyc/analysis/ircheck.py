@@ -277,7 +277,7 @@ class OpChecker(OpVisitor[None]):
         if op.type.name not in [expected_type, "builtins.object"]:
             self.fail(
                 op,
-                f"Invalid literal value for type: value has "
+                "Invalid literal value for type: value has "
                 f"type {expected_type}, but op has type {op.type.name}",
             )
 

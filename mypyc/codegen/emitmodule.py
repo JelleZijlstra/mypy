@@ -752,11 +752,8 @@ class GroupGenerator:
                 shared_lib_name(self.group_name).split(".")[-1]
             ),
             "{",
-            (
-                'static PyModuleDef def = {{ PyModuleDef_HEAD_INIT, "{}", NULL, -1, NULL, NULL }};'.format(
-                    shared_lib_name(self.group_name)
-                )
-            ),
+            'static PyModuleDef def = {{ PyModuleDef_HEAD_INIT, "{}", NULL, -1, NULL, NULL }};'
+            .format(shared_lib_name(self.group_name)),
             "int res;",
             "PyObject *capsule;",
             "PyObject *tmp;",

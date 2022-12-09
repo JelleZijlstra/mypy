@@ -163,7 +163,6 @@ ChangesAndRemovals: _TypeAlias = Tuple[ModulePathPairs, ModulePathPairs]
 
 
 class Server:
-
     # NOTE: the instance is constructed in the parent process but
     # serve() is called in the grandchild (by daemonize()).
 
@@ -824,7 +823,6 @@ class Server:
     def update_changed(
         self, sources: list[BuildSource], remove: list[str], update: list[str]
     ) -> ChangesAndRemovals:
-
         changed_paths = self.fswatcher.update_changed(remove, update)
         return self._find_changed(sources, changed_paths)
 
@@ -879,8 +877,10 @@ class Server:
             return {"error": 'Python 3.8 required for "inspect" command'}
         if not self.fine_grained_manager:
             return {
-                "error": 'Command "inspect" is only valid after a "check" command'
-                " (that produces no parse errors)"
+                "error": (
+                    'Command "inspect" is only valid after a "check" command'
+                    " (that produces no parse errors)"
+                )
             }
         engine = InspectionEngine(
             self.fine_grained_manager,
@@ -914,8 +914,10 @@ class Server:
         """Suggest a signature for a function."""
         if not self.fine_grained_manager:
             return {
-                "error": "Command 'suggest' is only valid after a 'check' command"
-                " (that produces no parse errors)"
+                "error": (
+                    "Command 'suggest' is only valid after a 'check' command"
+                    " (that produces no parse errors)"
+                )
             }
         engine = SuggestionEngine(self.fine_grained_manager, **kwargs)
         try:

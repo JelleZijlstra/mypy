@@ -29,8 +29,7 @@ if sys.version_info >= (3, 9):
     TYPESHED_DIR: Final = str(importlib_resources.files("mypy") / "typeshed")
 else:
     with importlib_resources.path(
-        "mypy",  # mypy-c doesn't support __package__
-        "py.typed",  # a marker file for type information, we assume typeshed to live in the same dir
+        "mypy", "py.typed"  # mypy-c doesn't support __package__
     ) as _resource:
         TYPESHED_DIR = str(_resource.parent / "typeshed")
 

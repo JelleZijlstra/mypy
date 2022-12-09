@@ -132,9 +132,8 @@ def parse_test_case(case: DataDrivenTestCase) -> None:
                     compare_op = arg[7:9]
                     if compare_op not in {">=", "=="}:
                         raise ValueError(
-                            "{}, line {}: Only >= and == version checks are currently supported".format(
-                                case.file, item.line
-                            )
+                            "{}, line {}: Only >= and == version checks are currently supported"
+                            .format(case.file, item.line)
                         )
                     version_str = arg[9:]
                     try:

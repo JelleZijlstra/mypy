@@ -209,7 +209,8 @@ class DefinedVariableTracker:
         self._scope().record_undefined_ref(o)
 
     def pop_undefined_ref(self, name: str) -> set[NameExpr]:
-        """If name has previously been reported as undefined, the NameExpr that was called will be returned."""
+        """If name has previously been reported as undefined, the NameExpr that was called will be returned.
+        """
         assert len(self.scopes) > 0
         return self._scope().pop_undefined_ref(name)
 
@@ -219,7 +220,8 @@ class DefinedVariableTracker:
         return self._scope().branch_stmts[-1].is_partially_defined(name)
 
     def is_defined_in_different_branch(self, name: str) -> bool:
-        """This will return true if a variable is defined in a branch that's not the current branch."""
+        """This will return true if a variable is defined in a branch that's not the current branch.
+        """
         assert len(self._scope().branch_stmts) > 0
         stmt = self._scope().branch_stmts[-1]
         if not stmt.is_undefined(name):

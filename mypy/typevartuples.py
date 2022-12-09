@@ -47,14 +47,17 @@ def split_with_instance(
 
 def split_with_mapped_and_template(
     mapped: Instance, template: Instance
-) -> tuple[
-    tuple[Type, ...],
-    tuple[Type, ...],
-    tuple[Type, ...],
-    tuple[Type, ...],
-    tuple[Type, ...],
-    tuple[Type, ...],
-] | None:
+) -> (
+    tuple[
+        tuple[Type, ...],
+        tuple[Type, ...],
+        tuple[Type, ...],
+        tuple[Type, ...],
+        tuple[Type, ...],
+        tuple[Type, ...],
+    ]
+    | None
+):
     split_result = fully_split_with_mapped_and_template(mapped, template)
     if split_result is None:
         return None
@@ -84,18 +87,21 @@ def split_with_mapped_and_template(
 
 def fully_split_with_mapped_and_template(
     mapped: Instance, template: Instance
-) -> tuple[
-    tuple[Type, ...],
-    tuple[Type, ...],
-    tuple[Type, ...],
-    tuple[Type, ...],
-    tuple[Type, ...],
-    tuple[Type, ...],
-    tuple[Type, ...],
-    tuple[Type, ...],
-    tuple[Type, ...],
-    tuple[Type, ...],
-] | None:
+) -> (
+    tuple[
+        tuple[Type, ...],
+        tuple[Type, ...],
+        tuple[Type, ...],
+        tuple[Type, ...],
+        tuple[Type, ...],
+        tuple[Type, ...],
+        tuple[Type, ...],
+        tuple[Type, ...],
+        tuple[Type, ...],
+        tuple[Type, ...],
+    ]
+    | None
+):
     mapped_prefix, mapped_middle, mapped_suffix = split_with_instance(mapped)
     template_prefix, template_middle, template_suffix = split_with_instance(template)
 

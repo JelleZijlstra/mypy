@@ -826,8 +826,9 @@ class TypeAnalyser(SyntheticTypeVisitor[Type], TypeAnalyzerPluginInterface):
                 ).format(short, short, short)
             )
             notes.append(
-                '(Hint: Use "{}" in function signature to bind "{}"'
-                " inside a function)".format(short, short)
+                '(Hint: Use "{}" in function signature to bind "{}" inside a function)'.format(
+                    short, short
+                )
             )
         else:
             message = 'Cannot interpret reference "{}" as a type'

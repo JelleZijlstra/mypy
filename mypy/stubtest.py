@@ -262,22 +262,17 @@ def _verify_exported_names(
         return
     yield Error(
         object_path + ["__all__"],
-        (
-            "names exported from the stub do not correspond to the names exported at runtime. "
-            "This is probably due to things being missing from the stub, or if present, an inaccurate `__all__` in the stub"
-        ),
+        "names exported from the stub do not correspond to the names exported at runtime. This is"
+        " probably due to things being missing from the stub, or if present, an inaccurate"
+        " `__all__` in the stub",
         # Pass in MISSING instead of the stub and runtime objects, as the line numbers aren't very
         # relevant here, and it makes for a prettier error message
         # This means this error will be ignored when using `--ignore-missing-stub`, which is
         # desirable in at least the `names_in_runtime_not_stub` case
         stub_object=MISSING,
         runtime_object=MISSING,
-        stub_desc=(
-            f"Names exported in the stub but not at runtime: " f"{names_in_stub_not_runtime}"
-        ),
-        runtime_desc=(
-            f"Names exported at runtime but not in the stub: " f"{names_in_runtime_not_stub}"
-        ),
+        stub_desc=f"Names exported in the stub but not at runtime: {names_in_stub_not_runtime}",
+        runtime_desc=f"Names exported at runtime but not in the stub: {names_in_runtime_not_stub}",
     )
 
 
@@ -596,7 +591,7 @@ def _verify_arg_default_value(
         if stub_arg.kind.is_optional():
             yield (
                 f'stub argument "{stub_arg.variable.name}" has a default value '
-                f"but runtime argument does not"
+                "but runtime argument does not"
             )
 
 
@@ -1755,7 +1750,7 @@ def parse_options(args: list[str]) -> _Arguments:
     parser.add_argument(
         "--mypy-config-file",
         metavar="FILE",
-        help=("Use specified mypy config file to determine mypy plugins and mypy path"),
+        help="Use specified mypy config file to determine mypy plugins and mypy path",
     )
     parser.add_argument(
         "--custom-typeshed-dir", metavar="DIR", help="Use the custom typeshed in DIR"

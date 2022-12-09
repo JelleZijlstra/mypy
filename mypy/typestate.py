@@ -95,7 +95,7 @@ class TypeState:
 
     @staticmethod
     def is_assumed_subtype(left: Type, right: Type) -> bool:
-        for (l, r) in reversed(TypeState._assuming):
+        for l, r in reversed(TypeState._assuming):
             if get_proper_type(l) == get_proper_type(left) and get_proper_type(
                 r
             ) == get_proper_type(right):
@@ -104,7 +104,7 @@ class TypeState:
 
     @staticmethod
     def is_assumed_proper_subtype(left: Type, right: Type) -> bool:
-        for (l, r) in reversed(TypeState._assuming_proper):
+        for l, r in reversed(TypeState._assuming_proper):
             if get_proper_type(l) == get_proper_type(left) and get_proper_type(
                 r
             ) == get_proper_type(right):

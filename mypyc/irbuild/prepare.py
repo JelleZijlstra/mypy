@@ -212,7 +212,6 @@ def can_subclass_builtin(builtin_base: str) -> bool:
 def prepare_class_def(
     path: str, module_name: str, cdef: ClassDef, errors: Errors, mapper: Mapper
 ) -> None:
-
     ir = mapper.type_to_ir[cdef.info]
     info = cdef.info
 
@@ -336,7 +335,6 @@ def prepare_class_def(
 def prepare_non_ext_class_def(
     path: str, module_name: str, cdef: ClassDef, errors: Errors, mapper: Mapper
 ) -> None:
-
     ir = mapper.type_to_ir[cdef.info]
     info = cdef.info
 

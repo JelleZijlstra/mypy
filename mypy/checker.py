@@ -1341,10 +1341,14 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
                 and arg.initializer.fullname == "builtins.None"
             ):
                 notes = [
-                    "PEP 484 prohibits implicit Optional. "
-                    "Accordingly, mypy has changed its default to no_implicit_optional=True",
-                    "Use https://github.com/hauntsaninja/no_implicit_optional to automatically "
-                    "upgrade your codebase",
+                    (
+                        "PEP 484 prohibits implicit Optional. "
+                        "Accordingly, mypy has changed its default to no_implicit_optional=True"
+                    ),
+                    (
+                        "Use https://github.com/hauntsaninja/no_implicit_optional to automatically"
+                        " upgrade your codebase"
+                    ),
                 ]
             else:
                 notes = None
@@ -2932,7 +2936,6 @@ class TypeChecker(NodeVisitor[None], CheckerPluginInterface):
             and lvalue.kind in (MDEF, None)
             and len(lvalue_node.info.bases) > 0  # None for Vars defined via self
         ):
-
             for base in lvalue_node.info.mro[1:]:
                 tnode = base.names.get(lvalue_node.name)
                 if tnode is not None:

@@ -183,9 +183,11 @@ p.add_argument(
     "location",
     metavar="LOCATION",
     type=str,
-    help="Location specified as path/to/file.py:line:column[:end_line:end_column]."
-    " If position is given (i.e. only line and column), this will return all"
-    " enclosing expressions",
+    help=(
+        "Location specified as path/to/file.py:line:column[:end_line:end_column]."
+        " If position is given (i.e. only line and column), this will return all"
+        " enclosing expressions"
+    ),
 )
 p.add_argument(
     "--show",
@@ -212,14 +214,18 @@ p.add_argument(
 p.add_argument(
     "--include-span",
     action="store_true",
-    help="Prepend each inspection result with the span of corresponding expression"
-    ' (e.g. 1:2:3:4:"int")',
+    help=(
+        "Prepend each inspection result with the span of corresponding expression"
+        ' (e.g. 1:2:3:4:"int")'
+    ),
 )
 p.add_argument(
     "--include-kind",
     action="store_true",
-    help="Prepend each inspection result with the kind of corresponding expression"
-    ' (e.g. NameExpr:"int")',
+    help=(
+        "Prepend each inspection result with the kind of corresponding expression"
+        ' (e.g. NameExpr:"int")'
+    ),
 )
 p.add_argument(
     "--include-object-attrs",
@@ -229,8 +235,10 @@ p.add_argument(
 p.add_argument(
     "--union-attrs",
     action="store_true",
-    help="Include attributes valid for some of possible expression types"
-    " (by default an intersection is returned)",
+    help=(
+        "Include attributes valid for some of possible expression types"
+        " (by default an intersection is returned)"
+    ),
 )
 p.add_argument(
     "--force-reload",

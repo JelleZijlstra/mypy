@@ -255,7 +255,6 @@ def parse(
     errors: Errors | None = None,
     options: Options | None = None,
 ) -> MypyFile:
-
     """Parse a source file, without doing any semantic analysis.
 
     Return the parse tree. If errors is not provided, raise ParseError
@@ -489,10 +488,8 @@ class ASTConverter:
         ):
             if self.type_ignores[min(self.type_ignores)]:
                 self.fail(
-                    (
-                        "type ignore with error code is not supported for modules; "
-                        "use `# mypy: disable-error-code=...`"
-                    ),
+                    "type ignore with error code is not supported for modules; "
+                    "use `# mypy: disable-error-code=...`",
                     line=min(self.type_ignores),
                     column=0,
                     blocker=False,

@@ -51,8 +51,8 @@ class TestStruct(unittest.TestCase):
         r = RStruct("Foo", ["a", "b"], [bool_rprimitive, object_rprimitive])
         assert str(r) == "Foo{a:bool, b:object}"
         assert (
-            repr(r) == "<RStruct Foo{a:<RPrimitive builtins.bool>, "
-            "b:<RPrimitive builtins.object>}>"
+            repr(r)
+            == "<RStruct Foo{a:<RPrimitive builtins.bool>, b:<RPrimitive builtins.object>}>"
         )
         r1 = RStruct("Bar", ["c"], [int32_rprimitive])
         assert str(r1) == "Bar{c:int32}"

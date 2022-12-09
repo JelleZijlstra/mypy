@@ -189,7 +189,6 @@ class DataclassTransformer:
             and ("__init__" not in info.names or info.names["__init__"].plugin_generated)
             and attributes
         ):
-
             with state.strict_optional_set(ctx.api.options.strict_optional):
                 args = [
                     attr.to_argument(info)
@@ -312,8 +311,7 @@ class DataclassTransformer:
             # This means that version is lower than `3.10`,
             # it is just a non-existent argument for `dataclass` function.
             self._ctx.api.fail(
-                'Keyword argument "slots" for "dataclass" '
-                "is only valid in Python 3.10 and higher",
+                'Keyword argument "slots" for "dataclass" is only valid in Python 3.10 and higher',
                 self._ctx.reason,
             )
             return
@@ -434,8 +432,7 @@ class DataclassTransformer:
 
             if isinstance(node, TypeAlias):
                 ctx.api.fail(
-                    ("Type aliases inside dataclass definitions are not supported at runtime"),
-                    node,
+                    "Type aliases inside dataclass definitions are not supported at runtime", node
                 )
                 # Skip processing this node. This doesn't match the runtime behaviour,
                 # but the only alternative would be to modify the SymbolTable,

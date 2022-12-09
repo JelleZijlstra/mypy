@@ -1000,7 +1000,6 @@ def generate_readonly_getter(
 def generate_property_setter(
     cl: ClassIR, attr: str, arg_type: RType, func_ir: FuncIR, emitter: Emitter
 ) -> None:
-
     emitter.emit_line("static int")
     emitter.emit_line(
         "{}({} *self, PyObject *value, void *closure)".format(

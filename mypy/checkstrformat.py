@@ -139,7 +139,6 @@ class ConversionSpecifier:
     def __init__(
         self, match: Match[str], start_pos: int = -1, non_standard_format_spec: bool = False
     ) -> None:
-
         self.whole_seq = match.group()
         self.start_pos = start_pos
 
@@ -370,7 +369,7 @@ class StringFormatterChecker:
                 ):
                     # TODO: add support for some custom specs like datetime?
                     self.msg.fail(
-                        "Unrecognized format" ' specification "{}"'.format(spec.format_spec[1:]),
+                        'Unrecognized format specification "{}"'.format(spec.format_spec[1:]),
                         call,
                         code=codes.STRING_FORMATTING,
                     )
@@ -391,8 +390,9 @@ class StringFormatterChecker:
                 # If the explicit conversion is given, then explicit conversion is called _first_.
                 if spec.conversion[1] not in "rsa":
                     self.msg.fail(
-                        'Invalid conversion type "{}",'
-                        ' must be one of "r", "s" or "a"'.format(spec.conversion[1]),
+                        'Invalid conversion type "{}", must be one of "r", "s" or "a"'.format(
+                            spec.conversion[1]
+                        ),
                         call,
                         code=codes.STRING_FORMATTING,
                     )
@@ -470,8 +470,7 @@ class StringFormatterChecker:
                 expr = self.get_expr_by_position(int(key), call)
                 if not expr:
                     self.msg.fail(
-                        "Cannot find replacement for positional"
-                        " format specifier {}".format(key),
+                        "Cannot find replacement for positional format specifier {}".format(key),
                         call,
                         code=codes.STRING_FORMATTING,
                     )
@@ -480,7 +479,7 @@ class StringFormatterChecker:
                 expr = self.get_expr_by_name(key, call)
                 if not expr:
                     self.msg.fail(
-                        "Cannot find replacement for named" ' format specifier "{}"'.format(key),
+                        'Cannot find replacement for named format specifier "{}"'.format(key),
                         call,
                         code=codes.STRING_FORMATTING,
                     )
@@ -652,8 +651,9 @@ class StringFormatterChecker:
                 assert spec.key, "Call this method only after auto-generating keys!"
                 assert spec.field
                 self.msg.fail(
-                    "Invalid index expression in format field"
-                    ' accessor "{}"'.format(spec.field[len(spec.key) :]),
+                    'Invalid index expression in format field accessor "{}"'.format(
+                        spec.field[len(spec.key) :]
+                    ),
                     ctx,
                     code=codes.STRING_FORMATTING,
                 )

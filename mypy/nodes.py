@@ -3280,7 +3280,6 @@ class TypeInfo(SymbolNode):
 
 
 class FakeInfo(TypeInfo):
-
     __slots__ = ("msg",)
 
     # types.py defines a single instance of this class, called types.NOT_READY.

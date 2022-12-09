@@ -44,7 +44,7 @@ type_of_any_name_map: Final[collections.OrderedDict[int, str]] = collections.Ord
 )
 
 ReporterClasses: _TypeAlias = Dict[
-    str, Tuple[Callable[["Reports", str], "AbstractReporter"], bool],
+    str, Tuple[Callable[["Reports", str], "AbstractReporter"], bool]
 ]
 
 reporter_classes: Final[ReporterClasses] = {}
@@ -859,7 +859,6 @@ class LinePrecisionReporter(AbstractReporter):
         type_map: dict[Expression, Type],
         options: Options,
     ) -> None:
-
         try:
             path = os.path.relpath(tree.path)
         except ValueError:

@@ -1100,7 +1100,7 @@ class ConstraintBuilderVisitor(TypeVisitor[List[Constraint]]):
             res: list[Constraint] = []
             # NOTE: Non-matching keys are ignored. Compatibility is checked
             #       elsewhere so this shouldn't be unsafe.
-            for (item_name, template_item_type, actual_item_type) in template.zip(actual):
+            for item_name, template_item_type, actual_item_type in template.zip(actual):
                 res.extend(infer_constraints(template_item_type, actual_item_type, self.direction))
             return res
         elif isinstance(actual, AnyType):

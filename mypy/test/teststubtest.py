@@ -1563,8 +1563,9 @@ class StubtestMiscUnit(unittest.TestCase):
 
             # test unused entry detection
             output = run_stubtest(stub="", runtime="", options=["--allowlist", allowlist.name])
-            assert output == (
-                f"note: unused allowlist entry {TEST_MODULE_NAME}.bad\n"
+            assert (
+                output
+                == f"note: unused allowlist entry {TEST_MODULE_NAME}.bad\n"
                 "Found 1 error (checked 1 module)\n"
             )
 
@@ -1602,31 +1603,34 @@ class StubtestMiscUnit(unittest.TestCase):
                 ),
                 options=["--allowlist", allowlist.name, "--generate-allowlist"],
             )
-            assert output == (
-                f"note: unused allowlist entry unused.*\n" f"{TEST_MODULE_NAME}.also_bad\n"
+            assert (
+                output == f"note: unused allowlist entry unused.*\n{TEST_MODULE_NAME}.also_bad\n"
             )
         finally:
             os.unlink(allowlist.name)
 
     def test_mypy_build(self) -> None:
         output = run_stubtest(stub="+", runtime="", options=[])
-        assert remove_color_code(output) == (
-            "error: not checking stubs due to failed mypy compile:\n{}.pyi:1: "
-            "error: invalid syntax  [syntax]\n".format(TEST_MODULE_NAME)
+        assert remove_color_code(
+            output
+        ) == "error: not checking stubs due to failed mypy compile:\n{}.pyi:1: error: invalid syntax  [syntax]\n".format(
+            TEST_MODULE_NAME
         )
 
         output = run_stubtest(stub="def f(): ...\ndef f(): ...", runtime="", options=[])
-        assert remove_color_code(output) == (
-            "error: not checking stubs due to mypy build errors:\n{}.pyi:2: "
-            'error: Name "f" already defined on line 1  [no-redef]\n'.format(TEST_MODULE_NAME)
+        assert remove_color_code(
+            output
+        ) == 'error: not checking stubs due to mypy build errors:\n{}.pyi:2: error: Name "f" already defined on line 1  [no-redef]\n'.format(
+            TEST_MODULE_NAME
         )
 
     def test_missing_stubs(self) -> None:
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             test_stubs(parse_options(["not_a_module"]))
-        assert remove_color_code(output.getvalue()) == (
-            "error: not_a_module failed to find stubs\n"
+        assert (
+            remove_color_code(output.getvalue())
+            == "error: not_a_module failed to find stubs\n"
             "Stub:\nMISSING\nRuntime:\nN/A\n\n"
             "Found 1 error (checked 1 module)\n"
         )
@@ -1673,8 +1677,9 @@ class StubtestMiscUnit(unittest.TestCase):
         stub = "from decimal import Decimal\ntemp: Decimal\n"
         config_file = f"[mypy]\nplugins={root_dir}/test-data/unit/plugins/decimal_to_int.py\n"
         output = run_stubtest(stub=stub, runtime=runtime, options=[])
-        assert remove_color_code(output) == (
-            f"error: {TEST_MODULE_NAME}.temp variable differs from runtime type Literal[5]\n"
+        assert (
+            remove_color_code(output)
+            == f"error: {TEST_MODULE_NAME}.temp variable differs from runtime type Literal[5]\n"
             f"Stub: at line 2 in file {TEST_MODULE_NAME}.pyi\n_decimal.Decimal\nRuntime:\n5\n\n"
             "Found 1 error (checked 1 module)\n"
         )
@@ -1691,6 +1696,7 @@ class StubtestMiscUnit(unittest.TestCase):
         output = io.StringIO()
         with contextlib.redirect_stdout(output):
             test_stubs(parse_options(["--check-typeshed", "some_module"]))
-        assert remove_color_code(output.getvalue()) == (
-            "error: cannot pass both --check-typeshed and a list of modules\n"
+        assert (
+            remove_color_code(output.getvalue())
+            == "error: cannot pass both --check-typeshed and a list of modules\n"
         )

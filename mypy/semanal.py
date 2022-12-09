@@ -1431,7 +1431,8 @@ class SemanticAnalyzer(
                 param_name = "P"
 
             self.fail(
-                f'ParamSpec must have "*args" typed as "{param_name}.args" and "**kwargs" typed as "{param_name}.kwargs"',
+                f'ParamSpec must have "*args" typed as "{param_name}.args" and "**kwargs" typed as'
+                f' "{param_name}.kwargs"',
                 func,
                 code=codes.VALID_TYPE,
             )
@@ -2155,8 +2156,7 @@ class SemanticAnalyzer(
             calculate_mro(defn.info, obj_type)
         except MroError:
             self.fail(
-                "Cannot determine consistent method resolution "
-                'order (MRO) for "%s"' % defn.name,
+                'Cannot determine consistent method resolution order (MRO) for "%s"' % defn.name,
                 defn,
             )
             self.set_dummy_mro(defn.info)
@@ -4343,7 +4343,6 @@ class SemanticAnalyzer(
             and s.lvalues[0].name == "__slots__"
             and s.lvalues[0].kind == MDEF
         ):
-
             # We understand `__slots__` defined as string, tuple, list, set, and dict:
             if not isinstance(s.rvalue, (StrExpr, ListExpr, TupleExpr, SetExpr, DictExpr)):
                 # For example, `__slots__` can be defined as a variable,
@@ -4628,7 +4627,7 @@ class SemanticAnalyzer(
         """Bind name expression to a symbol table node."""
         if isinstance(sym.node, TypeVarExpr) and self.tvar_scope.get_binding(sym):
             self.fail(
-                '"{}" is a type variable and only valid in type ' "context".format(expr.name), expr
+                '"{}" is a type variable and only valid in type context'.format(expr.name), expr
             )
         elif isinstance(sym.node, PlaceholderNode):
             self.process_placeholder(expr.name, "name", expr)
