@@ -71,7 +71,9 @@ from mypy.nodes import (
     TupleExpr,
     TypeAlias,
     TypeAliasExpr,
+    TypeAliasStmt,
     TypeApplication,
+    TypeVarNode,
     TypedDictExpr,
     TypeVarExpr,
     TypeVarTupleExpr,
@@ -160,6 +162,13 @@ class TraverserVisitor(NodeVisitor[None]):
 
     def visit_expression_stmt(self, o: ExpressionStmt) -> None:
         o.expr.accept(self)
+
+    def visit_type_var_node(self, o: TypeVarNode) -> None:
+        pass
+
+    def visit_type_alias_stmt(self, o: TypeAliasStmt) -> None:
+        for param in o.type_params:
+            param.accept(self)
 
     def visit_assignment_stmt(self, o: AssignmentStmt) -> None:
         o.rvalue.accept(self)
@@ -664,6 +673,16 @@ class ExtendedTraverserVisitor(TraverserVisitor):
         if not self.visit(o):
             return
         super().visit_super_expr(o)
+
+    def visit_type_var_node(self, o: TypeVarNode) -> None:
+        if not self.visit(o):
+            return
+        super().visit_type_var_node(o)
+
+    def visit_type_alias_stmt(self, o: TypeAliasStmt) -> None:
+        if not self.visit(o):
+            return
+        super().visit_type_alias_stmt(o)
 
     def visit_assignment_expr(self, o: AssignmentExpr) -> None:
         if not self.visit(o):

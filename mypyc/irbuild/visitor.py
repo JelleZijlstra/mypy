@@ -70,7 +70,9 @@ from mypy.nodes import (
     TryStmt,
     TupleExpr,
     TypeAliasExpr,
+    TypeAliasStmt,
     TypeApplication,
+    TypeVarNode,
     TypedDictExpr,
     TypeVarExpr,
     TypeVarTupleExpr,
@@ -248,6 +250,12 @@ class IRBuilderVisitor(IRVisitor):
 
     def visit_match_stmt(self, stmt: MatchStmt) -> None:
         transform_match_stmt(self.builder, stmt)
+
+    def visit_type_alias_stmt(self, o: TypeAliasStmt) -> None:
+        self.bail("type alias not supported", o.line)
+
+    def visit_type_var_node(self, o: TypeVarNode) -> None:
+        self.bail("type var not supported", o.line)
 
     # Expressions
 

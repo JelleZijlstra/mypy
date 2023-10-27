@@ -1,9 +1,10 @@
 [case test695TypeAlias]
-type MyInt = int  # E: PEP 695 type aliases are not yet supported
+type MyInt = int
 
 def f(x: MyInt) -> MyInt:
     return reveal_type(x)  # N: Revealed type is "builtins.int"
 
+[case test695GenericTypeAlias]
 type MyList[T] = list[T]  # E: PEP 695 type aliases are not yet supported \
                           # E: Name "T" is not defined
 

@@ -1232,6 +1232,76 @@ class ExpressionStmt(Statement):
         return visitor.visit_expression_stmt(self)
 
 
+@unique
+class TypeVarLikeKind(Enum):
+    TYPEVAR = 1
+    PARAMSPEC = 2
+    TYPEVARTUPLE = 3
+
+
+class TypeVarNode(SymbolNode):
+    __slots__ = ("name", "kind", "bound")
+    __match_args__ = ("name", "kind", "bound")
+
+    name: str
+    kind: TypeVarLikeKind
+    bound: mypy.types.Type | None
+
+    def __init__(self, name: str, kind: TypeVarLikeKind, bound: mypy.types.Type | None = None) -> None:
+        super().__init__()
+        self.name = name
+        self.kind = kind
+        self.bound = bound
+
+    @property
+    def fullname(self) -> str:
+        return self.name
+
+    def accept(self, visitor: NodeVisitor[T]) -> T:
+        return visitor.visit_type_var_node(self)
+
+    def serialize(self) -> JsonDict:
+        return {
+            ".class": "TypeVarNode",
+            "name": self.name,
+            "kind": self.kind.value,
+            "bound": None if self.bound is None else self.bound.serialize(),
+        }
+
+    @classmethod
+    def deserialize(cls, data: JsonDict) -> TypeVarNode:
+        assert data[".class"] == "TypeVarNode"
+        return TypeVarNode(
+            data["name"],
+            TypeVarLikeKind(data["kind"]),
+            None if data["bound"] is None else mypy.types.deserialize_type(data["bound"]),
+        )
+
+
+class TypeAliasStmt(Statement):
+    """Type statement (new in Python 3.12, see PEP 695)."""
+
+    __slots__ = (
+        "name",
+        "type_params",
+        "rvalue"
+    )
+    __match_args__ = ("name", "type_params", "rvalue")
+
+    name: str
+    type_params: list[TypeVarNode]
+    rvalue: mypy.types.Type | None
+
+    def __init__(self, name: str, type_params: list[TypeVarNode], rvalue: mypy.types.Type | None) -> None:
+        super().__init__()
+        self.name = name
+        self.type_params = type_params
+        self.rvalue = rvalue
+
+    def accept(self, visitor: StatementVisitor[T]) -> T:
+        return visitor.visit_type_alias_stmt(self)
+
+
 class AssignmentStmt(Statement):
     """Assignment statement.
 

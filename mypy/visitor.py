@@ -206,6 +206,14 @@ class StatementVisitor(Generic[T]):
         pass
 
     @abstractmethod
+    def visit_type_alias_stmt(self, o: mypy.nodes.TypeAliasStmt) -> T:
+        pass
+
+    @abstractmethod
+    def visit_type_var_node(self, o: mypy.nodes.TypeVarNode) -> T:
+        pass
+
+    @abstractmethod
     def visit_for_stmt(self, o: mypy.nodes.ForStmt) -> T:
         pass
 
@@ -416,6 +424,12 @@ class NodeVisitor(Generic[T], ExpressionVisitor[T], StatementVisitor[T], Pattern
         pass
 
     def visit_assignment_stmt(self, o: mypy.nodes.AssignmentStmt) -> T:
+        pass
+
+    def visit_type_alias_stmt(self, o: mypy.nodes.TypeAliasStmt) -> T:
+        pass
+
+    def visit_type_var_node(self, o: mypy.nodes.TypeVarNode) -> T:
         pass
 
     def visit_operator_assignment_stmt(self, o: mypy.nodes.OperatorAssignmentStmt) -> T:

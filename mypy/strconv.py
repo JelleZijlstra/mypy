@@ -214,6 +214,19 @@ class StrConv(NodeVisitor[str]):
     def visit_expression_stmt(self, o: mypy.nodes.ExpressionStmt) -> str:
         return self.dump([o.expr], o)
 
+    def visit_type_var_node(self, o: mypy.nodes.TypeVarNode) -> str:
+        a: list[Any] = [o.name, o.kind.name]
+        if o.bound is not None:
+            a.append(("Bound", o.bound))
+        return self.dump(a, o)
+
+    def visit_type_alias_stmt(self, o: mypy.nodes.TypeAliasStmt) -> str:
+        a: list[Any] = [o.name]
+        if o.type_params:
+            a.append(("TypeParams", o.type_params))
+        a.append(("Type", o.rvalue))
+        return self.dump(a, o)
+
     def visit_assignment_stmt(self, o: mypy.nodes.AssignmentStmt) -> str:
         a: list[Any] = []
         if len(o.lvalues) > 1:

@@ -80,7 +80,9 @@ from mypy.nodes import (
     TryStmt,
     TupleExpr,
     TypeAliasExpr,
+    TypeAliasStmt,
     TypeApplication,
+    TypeVarNode,
     TypedDictExpr,
     TypeVarExpr,
     TypeVarTupleExpr,
@@ -310,6 +312,13 @@ class TransformVisitor(NodeVisitor[Node]):
 
     def visit_expression_stmt(self, node: ExpressionStmt) -> ExpressionStmt:
         return ExpressionStmt(self.expr(node.expr))
+
+    def visit_type_var_node(self, node: TypeVarNode) -> TypeVarNode:
+        return TypeVarNode(node.name, node.kind, self.optional_type(node.bound))
+
+    def visit_type_alias_stmt(self, node: TypeAliasStmt) -> TypeAliasStmt:
+        type_params = [ self.visit_type_var_node(var) for var in node.type_params ]
+        return TypeAliasStmt(node.name, type_params, self.optional_type(node.rvalue))
 
     def visit_assignment_stmt(self, node: AssignmentStmt) -> AssignmentStmt:
         return self.duplicate_assignment(node)

@@ -79,6 +79,9 @@ from mypy.nodes import (
     TempNode,
     TryStmt,
     TupleExpr,
+    TypeAliasStmt,
+    TypeVarLikeKind,
+    TypeVarNode,
     UnaryExpr,
     Var,
     WhileStmt,
@@ -146,8 +149,14 @@ Constant = ast3.Constant
 
 if sys.version_info >= (3, 12):
     ast_TypeAlias = ast3.TypeAlias
+    ast_TypeVar = ast3.TypeVar
+    ast_ParamSpec = ast3.ParamSpec
+    ast_TypeVarTuple = ast3.TypeVarTuple
 else:
     ast_TypeAlias = Any
+    ast_TypeVar = Any
+    ast_ParamSpec = Any
+    ast_TypeVarTuple = Any
 
 if sys.version_info >= (3, 10):
     Match = ast3.Match
@@ -1176,6 +1185,31 @@ class ASTConverter:
         s = AssignmentStmt(lvalues, rvalue, type=typ, new_syntax=False)
         return self.set_line(s, n)
 
+    def visit_TypeVar(self, n: ast_TypeVar) -> TypeVarNode:
+        line = n.lineno
+        if n.bound is not None:
+            bound = TypeConverter(self.errors, line=line).visit(n.bound)
+        else:
+            bound = None
+        return TypeVarNode(n.name, TypeVarLikeKind.TYPEVAR, bound)
+
+    def visit_ParamSpec(self, n: ast_ParamSpec) -> TypeVarNode:
+        return TypeVarNode(n.name, TypeVarLikeKind.PARAMSPEC)
+
+    def visit_TypeVarTuple(self, n: ast_TypeVarTuple) -> TypeVarNode:
+        return TypeVarNode(n.name, TypeVarLikeKind.TYPEVARTUPLE)
+
+    def _visit_type_params(self, n: list[AST]) -> list[TypeVarNode]:
+        return [self.visit(p) for p in n]
+
+    # TypeAlias(expr name, type_param* type_params, expr value)
+    def visit_TypeAlias(self, n: ast_TypeAlias) -> TypeAliasStmt:
+        line = n.lineno
+        typ = TypeConverter(self.errors, line=line).visit(n.value)
+        assert isinstance(n.name, ast3.Name)
+        node = TypeAliasStmt(n.name.id, self._visit_type_params(n.type_params), typ)
+        return self.set_line(node, n)
+
     # AnnAssign(expr target, expr annotation, expr? value, int simple)
     def visit_AnnAssign(self, n: ast3.AnnAssign) -> AssignmentStmt:
         line = n.lineno
@@ -1736,16 +1770,6 @@ class ASTConverter:
     # MatchOr(expr* pattern)
     def visit_MatchOr(self, n: MatchOr) -> OrPattern:
         node = OrPattern([self.visit(pattern) for pattern in n.patterns])
-        return self.set_line(node, n)
-
-    def visit_TypeAlias(self, n: ast_TypeAlias) -> AssignmentStmt:
-        self.fail(
-            ErrorMessage("PEP 695 type aliases are not yet supported", code=codes.VALID_TYPE),
-            n.lineno,
-            n.col_offset,
-            blocker=False,
-        )
-        node = AssignmentStmt([NameExpr(n.name.id)], self.visit(n.value))
         return self.set_line(node, n)
 
 

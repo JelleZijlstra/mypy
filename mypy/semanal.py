@@ -159,7 +159,9 @@ from mypy.nodes import (
     TupleExpr,
     TypeAlias,
     TypeAliasExpr,
+    TypeAliasStmt,
     TypeApplication,
+    TypeVarNode,
     TypedDictExpr,
     TypeInfo,
     TypeVarExpr,
@@ -2807,6 +2809,37 @@ class SemanticAnalyzer(
                     return False
                 break
         return True
+
+    def visit_type_var_node(self, s: TypeVarNode) -> None:
+        pass  # TODO
+
+    def visit_type_alias_stmt(self, s: TypeAliasStmt) -> None:
+        self.statement = s
+        res = s.rvalue
+        if res is None:
+            res = AnyType(TypeOfAny.from_error)
+        else:
+            res = self.anal_type(res)
+            check_for_explicit_any(res, self.options, self.is_typeshed_stub_file, self.msg, context=s)
+        if res is None:
+            res = AnyType(TypeOfAny.from_error)
+        else:
+            res = make_any_non_explicit(res)
+
+        # Aliases defined within functions can't be accessed outside
+        # the function, since the symbol table will no longer
+        # exist. Work around by expanding them eagerly when used.
+        eager = self.is_func_scope()
+        alias_node = TypeAlias(
+            res,
+            self.qualified_name(s.name),
+            s.line,
+            s.column,
+            alias_tvars=s.type_params,
+            no_args=not s.type_params,
+            eager=eager,
+        )
+        self.add_symbol(s.name, alias_node, s)
 
     def visit_assignment_stmt(self, s: AssignmentStmt) -> None:
         self.statement = s
