@@ -103,7 +103,7 @@ def transform_func_def(builder: IRBuilder, fdef: FuncDef) -> None:
     if func_reg:
         builder.assign(get_func_target(builder, fdef), func_reg, fdef.line)
     maybe_insert_into_registry_dict(builder, fdef)
-    builder.functions.append(func_ir)
+    builder.add_function(func_ir, fdef.line)
 
 
 def transform_overloaded_func_def(builder: IRBuilder, o: OverloadedFuncDef) -> None:
@@ -889,9 +889,8 @@ def gen_calls_to_correct_impl(
         call_impl, next_impl = BasicBlock(), BasicBlock()
 
         current_id = builder.load_int(i)
-        builder.builder.compare_tagged_condition(
-            passed_id, current_id, "==", call_impl, next_impl, line
-        )
+        cond = builder.binary_op(passed_id, current_id, "==", line)
+        builder.add_bool_branch(cond, call_impl, next_impl)
 
         # Call the registered implementation
         builder.activate_block(call_impl)

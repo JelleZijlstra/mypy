@@ -8,6 +8,7 @@ file.  The individual passes are implemented in separate modules.
 
 The function build() is the main interface to this module.
 """
+
 # TODO: More consistent terminology, e.g. path/fnam, module/id, state/file
 
 from __future__ import annotations
@@ -145,7 +146,7 @@ def build(
     sources: list[BuildSource],
     options: Options,
     alt_lib_path: str | None = None,
-    flush_errors: Callable[[list[str], bool], None] | None = None,
+    flush_errors: Callable[[str | None, list[str], bool], None] | None = None,
     fscache: FileSystemCache | None = None,
     stdout: TextIO | None = None,
     stderr: TextIO | None = None,
@@ -177,7 +178,9 @@ def build(
     # fields for callers that want the traditional API.
     messages = []
 
-    def default_flush_errors(new_messages: list[str], is_serious: bool) -> None:
+    def default_flush_errors(
+        filename: str | None, new_messages: list[str], is_serious: bool
+    ) -> None:
         messages.extend(new_messages)
 
     flush_errors = flush_errors or default_flush_errors
@@ -197,7 +200,7 @@ def build(
         # Patch it up to contain either none or all none of the messages,
         # depending on whether we are flushing errors.
         serious = not e.use_stdout
-        flush_errors(e.messages, serious)
+        flush_errors(None, e.messages, serious)
         e.messages = messages
         raise
 
@@ -206,7 +209,7 @@ def _build(
     sources: list[BuildSource],
     options: Options,
     alt_lib_path: str | None,
-    flush_errors: Callable[[list[str], bool], None],
+    flush_errors: Callable[[str | None, list[str], bool], None],
     fscache: FileSystemCache | None,
     stdout: TextIO,
     stderr: TextIO,
@@ -255,7 +258,8 @@ def _build(
         stdout=stdout,
         stderr=stderr,
     )
-    manager.trace(repr(options))
+    if manager.verbosity() >= 2:
+        manager.trace(repr(options))
 
     reset_global_state()
     try:
@@ -599,7 +603,7 @@ class BuildManager:
         plugin: Plugin,
         plugins_snapshot: dict[str, str],
         errors: Errors,
-        flush_errors: Callable[[list[str], bool], None],
+        flush_errors: Callable[[str | None, list[str], bool], None],
         fscache: FileSystemCache,
         stdout: TextIO,
         stderr: TextIO,
@@ -679,9 +683,7 @@ class BuildManager:
         # for efficient lookup
         self.shadow_map: dict[str, str] = {}
         if self.options.shadow_file is not None:
-            self.shadow_map = {
-                source_file: shadow_file for (source_file, shadow_file) in self.options.shadow_file
-            }
+            self.shadow_map = dict(self.options.shadow_file)
         # a mapping from each file being typechecked to its possible shadow file
         self.shadow_equivalence_map: dict[str, str | None] = {}
         self.plugin = plugin
@@ -1117,7 +1119,7 @@ def read_deps_cache(manager: BuildManager, graph: Graph) -> dict[str, FgDepMeta]
     module_deps_metas = deps_meta["deps_meta"]
     assert isinstance(module_deps_metas, dict)
     if not manager.options.skip_cache_mtime_checks:
-        for id, meta in module_deps_metas.items():
+        for meta in module_deps_metas.values():
             try:
                 matched = manager.getmtime(meta["path"]) == meta["mtime"]
             except FileNotFoundError:
@@ -2090,7 +2092,7 @@ class State:
             self.meta.data_json, self.manager, "Load tree ", "Could not load tree: "
         )
         if data is None:
-            return None
+            return
 
         t0 = time.time()
         # TODO: Assert data file wasn't changed.
@@ -2171,8 +2173,8 @@ class State:
                     self.id,
                     self.xpath,
                     source,
-                    self.ignore_all or self.options.ignore_errors,
-                    self.options,
+                    ignore_errors=self.ignore_all or self.options.ignore_errors,
+                    options=self.options,
                 )
 
             else:
@@ -3380,7 +3382,7 @@ def order_ascc(graph: Graph, ascc: AbstractSet[str], pri_max: int = PRI_ALL) -> 
     strongly_connected_components() below for a reference.
     """
     if len(ascc) == 1:
-        return [s for s in ascc]
+        return list(ascc)
     pri_spread = set()
     for id in ascc:
         state = graph[id]
@@ -3457,7 +3459,11 @@ def process_stale_scc(graph: Graph, scc: list[str], manager: BuildManager) -> No
         for id in stale:
             graph[id].transitive_error = True
     for id in stale:
-        manager.flush_errors(manager.errors.file_messages(graph[id].xpath), False)
+        manager.flush_errors(
+            manager.errors.simplify_path(graph[id].xpath),
+            manager.errors.file_messages(graph[id].xpath),
+            False,
+        )
         graph[id].write_cache()
         graph[id].mark_as_rechecked()
 

@@ -129,7 +129,7 @@ PY_MINOR_VERSION: Final = sys.version_info[1]
 import ast as ast3
 
 # TODO: Index, ExtSlice are deprecated in 3.9.
-from ast import AST, Attribute, Call, FunctionType, Index, Name, Starred, UnaryOp, USub
+from ast import AST, Attribute, Call, FunctionType, Index, Name, Starred, UAdd, UnaryOp, USub
 
 
 def ast3_parse(
@@ -199,7 +199,7 @@ def parse(
     source: str | bytes,
     fnam: str,
     module: str | None,
-    errors: Errors | None = None,
+    errors: Errors,
     options: Options | None = None,
 ) -> MypyFile:
     """Parse a source file, without doing any semantic analysis.
@@ -208,16 +208,13 @@ def parse(
     on failure. Otherwise, use the errors object to report parse errors.
     """
     ignore_errors = (options is not None and options.ignore_errors) or (
-        errors is not None and fnam in errors.ignored_files
+        fnam in errors.ignored_files
     )
     # If errors are ignored, we can drop many function bodies to speed up type checking.
     strip_function_bodies = ignore_errors and (options is None or not options.preserve_asts)
-    raise_on_error = False
+
     if options is None:
         options = Options()
-    if errors is None:
-        errors = Errors(options)
-        raise_on_error = True
     errors.set_file(fnam, module, options=options)
     is_stub_file = fnam.endswith(".pyi")
     if is_stub_file:
@@ -237,11 +234,9 @@ def parse(
             options=options,
             is_stub=is_stub_file,
             errors=errors,
-            ignore_errors=ignore_errors,
             strip_function_bodies=strip_function_bodies,
+            path=fnam,
         ).visit(ast)
-        tree.path = fnam
-        tree.is_stub = is_stub_file
     except SyntaxError as e:
         # alias to please mypyc
         is_py38_or_earlier = sys.version_info < (3, 9)
@@ -262,9 +257,6 @@ def parse(
             code=codes.SYNTAX,
         )
         tree = MypyFile([], [], False, {})
-
-    if raise_on_error and errors.is_errors():
-        errors.raise_error()
 
     assert isinstance(tree, MypyFile)
     return tree
@@ -335,15 +327,8 @@ def parse_type_string(
     string expression "blah" using this function.
     """
     try:
-        _, node = parse_type_comment(expr_string.strip(), line=line, column=column, errors=None)
-        if isinstance(node, UnboundType) and node.original_str_expr is None:
-            node.original_str_expr = expr_string
-            node.original_str_fallback = expr_fallback_name
-            return node
-        elif isinstance(node, UnionType):
-            return node
-        else:
-            return RawExpressionType(expr_string, expr_fallback_name, line, column)
+        _, node = parse_type_comment(f"({expr_string})", line=line, column=column, errors=None)
+        return RawExpressionType(expr_string, expr_fallback_name, line, column, node=node)
     except (SyntaxError, ValueError):
         # Note: the parser will raise a `ValueError` instead of a SyntaxError if
         # the string happens to contain things like \x00.
@@ -366,8 +351,8 @@ class ASTConverter:
         is_stub: bool,
         errors: Errors,
         *,
-        ignore_errors: bool,
         strip_function_bodies: bool,
+        path: str,
     ) -> None:
         # 'C' for class, 'D' for function signature, 'F' for function, 'L' for lambda
         self.class_and_function_stack: list[Literal["C", "D", "F", "L"]] = []
@@ -376,8 +361,8 @@ class ASTConverter:
         self.options = options
         self.is_stub = is_stub
         self.errors = errors
-        self.ignore_errors = ignore_errors
         self.strip_function_bodies = strip_function_bodies
+        self.path = path
 
         self.type_ignores: dict[int, list[str]] = {}
 
@@ -389,6 +374,10 @@ class ASTConverter:
 
     def fail(self, msg: ErrorMessage, line: int, column: int, blocker: bool = True) -> None:
         if blocker or not self.options.ignore_errors:
+            # Make sure self.errors reflects any type ignores that we have parsed
+            self.errors.set_file_ignored_lines(
+                self.path, self.type_ignores, self.options.ignore_errors
+            )
             self.errors.report(line, column, msg.value, blocker=blocker, code=msg.code)
 
     def fail_merge_overload(self, node: IfStmt) -> None:
@@ -621,10 +610,9 @@ class ASTConverter:
                 # Check IfStmt block to determine if function overloads can be merged
                 if_overload_name = self._check_ifstmt_for_overloads(stmt, current_overload_name)
                 if if_overload_name is not None:
-                    (
-                        if_block_with_overload,
-                        if_unknown_truth_value,
-                    ) = self._get_executable_if_block_with_overloads(stmt)
+                    (if_block_with_overload, if_unknown_truth_value) = (
+                        self._get_executable_if_block_with_overloads(stmt)
+                    )
 
             if (
                 current_overload_name is not None
@@ -867,8 +855,13 @@ class ASTConverter:
                 self.type_ignores[ti.lineno] = parsed
             else:
                 self.fail(message_registry.INVALID_TYPE_IGNORE, ti.lineno, -1, blocker=False)
+
         body = self.fix_function_overloads(self.translate_stmt_list(mod.body, ismodule=True))
-        return MypyFile(body, self.imports, False, self.type_ignores)
+
+        ret = MypyFile(body, self.imports, False, ignored_lines=self.type_ignores)
+        ret.is_stub = self.is_stub
+        ret.path = self.path
+        return ret
 
     # --- stmt ---
     # FunctionDef(identifier name, arguments args,
@@ -919,9 +912,11 @@ class ASTConverter:
                         # PEP 484 disallows both type annotations and type comments
                         self.fail(message_registry.DUPLICATE_TYPE_SIGNATURES, lineno, n.col_offset)
                     arg_types = [
-                        a.type_annotation
-                        if a.type_annotation is not None
-                        else AnyType(TypeOfAny.unannotated)
+                        (
+                            a.type_annotation
+                            if a.type_annotation is not None
+                            else AnyType(TypeOfAny.unannotated)
+                        )
                         for a in args
                     ]
                 else:
@@ -1041,6 +1036,8 @@ class ASTConverter:
             return
         # Indicate that type should be wrapped in an Optional if arg is initialized to None.
         optional = isinstance(initializer, NameExpr) and initializer.name == "None"
+        if isinstance(type, RawExpressionType) and type.node is not None:
+            type = type.node
         if isinstance(type, UnboundType):
             type.optional = optional
 
@@ -1813,12 +1810,10 @@ class TypeConverter:
         )
 
     @overload
-    def visit(self, node: ast3.expr) -> ProperType:
-        ...
+    def visit(self, node: ast3.expr) -> ProperType: ...
 
     @overload
-    def visit(self, node: AST | None) -> ProperType | None:
-        ...
+    def visit(self, node: AST | None) -> ProperType | None: ...
 
     def visit(self, node: AST | None) -> ProperType | None:
         """Modified visit -- keep track of the stack of nodes"""
@@ -1963,12 +1958,18 @@ class TypeConverter:
 
     # UnaryOp(op, operand)
     def visit_UnaryOp(self, n: UnaryOp) -> Type:
-        # We support specifically Literal[-4] and nothing else.
-        # For example, Literal[+4] or Literal[~6] is not supported.
+        # We support specifically Literal[-4], Literal[+4], and nothing else.
+        # For example, Literal[~6] or Literal[not False] is not supported.
         typ = self.visit(n.operand)
-        if isinstance(typ, RawExpressionType) and isinstance(n.op, USub):
-            if isinstance(typ.literal_value, int):
+        if (
+            isinstance(typ, RawExpressionType)
+            # Use type() because we do not want to allow bools.
+            and type(typ.literal_value) is int  # noqa: E721
+        ):
+            if isinstance(n.op, USub):
                 typ.literal_value *= -1
+                return typ
+            if isinstance(n.op, UAdd):
                 return typ
         return self.invalid_type(n)
 
